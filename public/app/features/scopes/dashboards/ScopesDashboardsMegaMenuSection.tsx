@@ -8,6 +8,7 @@ import { useScopes } from '@grafana/runtime';
 import { Button, LoadingPlaceholder, ScrollContainer, Text, useStyles2 } from '@grafana/ui';
 
 import { useScopesServices } from '../ScopesContextProvider';
+import { useDebouncedScopesEnabled } from '../useDebouncedScopesEnabled';
 
 import { ScopesDashboardsTree } from './ScopesDashboardsTree';
 import { ScopesDashboardsTreeSearch } from './ScopesDashboardsTreeSearch';
@@ -29,7 +30,9 @@ export function ScopesDashboardsMegaMenuSection() {
     scopeServices?.scopesDashboardsService.state
   );
 
-  if (!scopeServices || !scopes || !scopes.state.enabled || scopes.state.readOnly) {
+  const showAsEnabled = useDebouncedScopesEnabled(scopes?.state.enabled ?? false);
+
+  if (!scopeServices || !scopes || !showAsEnabled) {
     return null;
   }
 
