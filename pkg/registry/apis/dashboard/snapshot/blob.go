@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"google.golang.org/grpc"
+
 	dashv0 "github.com/grafana/grafana/apps/dashboard/pkg/apis/dashboard/v0alpha1"
 	"github.com/grafana/grafana/pkg/apimachinery/utils"
+	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/storage/unified/resource"
 	"github.com/grafana/grafana/pkg/storage/unified/resourcepb"
 )
@@ -68,7 +71,7 @@ func readDashboardBlob(ctx context.Context, blobs resourcepb.BlobStoreClient, sn
 		Resource:       snapshotBlobKey(snap),
 		Uid:            ref.Uid,
 		MustProxyBytes: true,
-	})
+	}, grpc.MaxCallRecvMsgSize(setting.DefaultGRPCMaxRecvMsgSize))
 	if err != nil {
 		return nil, true, err
 	}
