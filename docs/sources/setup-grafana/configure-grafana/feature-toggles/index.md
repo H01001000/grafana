@@ -52,7 +52,6 @@ Most [generally available](https://grafana.com/docs/release-life-cycle/#general-
 | `azureMonitorPrometheusExemplars`            | Allows configuration of Azure Monitor as a data source that can provide Prometheus exemplars                                        | Yes                |
 | `cloudWatchRoundUpEndTime`                   | Round up end time for metric queries to the next minute to avoid missing data                                                       | Yes                |
 | `useSessionStorageForRedirection`            | Use session storage for handling the redirection after login                                                                        | Yes                |
-| `pluginsSriChecks`                           | Enables SRI checks for plugin assets                                                                                                |                    |
 | `azureMonitorDisableLogLimit`                | Disables the log limit restriction for Azure Monitor when true. The limit is enabled by default.                                    |                    |
 | `enableSCIM`                                 | Enables SCIM support for user and group management                                                                                  | Yes                |
 | `alertingUIOptimizeReducer`                  | Enables removing the reducer from the alerting UI when creating a new alert rule and using instant query                            | Yes                |
