@@ -2,8 +2,10 @@ package acimpl
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/grafana/grafana/pkg/infra/serverlock"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 )
 
@@ -34,11 +36,42 @@ func (s *Service) refreshBasicRolePermissionsInDB(ctx context.Context, rolesSnap
 	}
 
 	var err error
-	errLock := s.serverLock.LockExecuteAndRelease(ctx, ossBasicRoleSeedLockName, ossBasicRoleSeedTimeout, func(ctx context.Context) {
-		err = run(ctx)
-	})
+	attempt := func(ctx context.Context) error {
+		return s.serverLock.LockExecuteAndRelease(ctx, ossBasicRoleSeedLockName, ossBasicRoleSeedTimeout, func(ctx context.Context) {
+			err = run(ctx)
+		})
+	}
+	var errLock error
+	if s.cfg != nil && s.cfg.Raw != nil && s.cfg.Raw.Section("database").Key("cockroachdb_manual_bootstrap").MustBool(false) {
+		errLock = waitForBasicRoleSeed(ctx, attempt)
+	} else {
+		errLock = attempt(ctx)
+	}
 	if errLock != nil {
 		return errLock
 	}
 	return err
+}
+
+// Concurrent prototype nodes must wait for permission seeding, rather than skip it or exit.
+func waitForBasicRoleSeed(ctx context.Context, attempt func(context.Context) error) error {
+	ctx, cancel := context.WithTimeout(ctx, ossBasicRoleSeedTimeout)
+	defer cancel()
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		err := attempt(ctx)
+		var held *serverlock.ServerLockExistsError
+		if !errors.As(err, &held) {
+			return err
+		}
+		timer := time.NewTimer(100 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
 }

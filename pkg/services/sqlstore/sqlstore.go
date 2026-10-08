@@ -346,6 +346,9 @@ func (ss *SQLStore) initEngine(engine *xorm.Engine) error {
 	}
 
 	engine.SetMaxOpenConns(ss.dbCfg.MaxOpenConn)
+	if ss.dbCfg.CockroachDBManualBootstrap {
+		engine.EnableCockroachDB()
+	}
 	engine.SetMaxIdleConns(ss.dbCfg.MaxIdleConn)
 	engine.SetConnMaxLifetime(time.Second * time.Duration(ss.dbCfg.ConnMaxLifetime))
 

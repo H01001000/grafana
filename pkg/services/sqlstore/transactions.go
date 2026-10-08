@@ -6,6 +6,7 @@ import (
 	"math/rand/v2"
 	"time"
 
+	"github.com/grafana/grafana/pkg/util/crdb"
 	"github.com/grafana/grafana/pkg/util/xorm"
 
 	"github.com/grafana/grafana/pkg/bus"
@@ -53,6 +54,15 @@ func (ss *SQLStore) inTransactionWithRetry(ctx context.Context, fn func(ctx cont
 }
 
 func (ss *SQLStore) inTransactionWithRetryCtx(ctx context.Context, engine *xorm.Engine, bus bus.Bus, callback DBTransactionFunc, retry int) error {
+	if ss.dbCfg != nil && ss.dbCfg.CockroachDBManualBootstrap && ctx.Value(ContextSessionKey{}) == nil {
+		return crdb.Retry(ctx, ss.dbCfg.TransactionRetries, func() error {
+			return ss.inTransactionAttempt(ctx, engine, bus, callback, retry)
+		})
+	}
+	return ss.inTransactionAttempt(ctx, engine, bus, callback, retry)
+}
+
+func (ss *SQLStore) inTransactionAttempt(ctx context.Context, engine *xorm.Engine, bus bus.Bus, callback DBTransactionFunc, retry int) error {
 	sess, isNew, span, err := startSessionOrUseExisting(ctx, engine, true, ss.tracer)
 	if err != nil {
 		return err

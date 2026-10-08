@@ -1,0 +1,64 @@
+name: grafana-crdb-prototype-01a11452
+x-grafana-env: &env
+  GF_DATABASE_TYPE: postgres
+  GF_DATABASE_NAME: grafana
+  GF_DATABASE_USER: grafana
+  GF_DATABASE_SSL_MODE: disable
+  GF_SECURITY_ADMIN_PASSWORD: disposable-test-only
+  GF_SECURITY_SECRET_KEY: crdb-prototype-shared-test-secret
+  GF_ANALYTICS_REPORTING_ENABLED: 'false'
+  GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+  GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: 'false'
+  GF_PLUGINS_PREINSTALL_DISABLED: 'true'
+  GF_LOG_LEVEL: info
+x-runtime: &runtime
+  image: ${GRAFANA_CRDB_IMAGE:-grafana-crdb-prototype:13.2.3}
+  environment: &runtime-env
+    <<: *env
+    GF_DATABASE_HOST: crdb:26257
+    GF_DATABASE_COCKROACHDB_MANUAL_BOOTSTRAP: 'true'
+    GF_DATABASE_TRANSACTION_RETRIES: '20'
+    GF_UNIFIED_ALERTING_HA_PEERS: grafana-a:9094,grafana-b:9094
+    GF_UNIFIED_ALERTING_HA_LISTEN_ADDRESS: 0.0.0.0:9094
+  depends_on:
+    crdb: {condition: service_healthy}
+services:
+  pg:
+    image: postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+    environment:
+      POSTGRES_DB: grafana
+      POSTGRES_USER: grafana
+      POSTGRES_PASSWORD: disposable-pg-only
+    volumes: [pg-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U grafana -d grafana]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  crdb:
+    image: cockroachdb/cockroach@sha256:bc15746ef2c2493b2cfd46a76898a745587d068b1a259fff3c4447c3f3b36ea2
+    command: start-single-node --insecure --cache=128MiB --max-sql-memory=128MiB
+    volumes: [crdb-data:/cockroach/cockroach-data]
+    healthcheck:
+      test: [CMD, /cockroach/cockroach, sql, --insecure, --execute, SELECT 1]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+  bootstrap:
+    image: grafana/grafana@sha256:b28bae15e219c998fb0e0424ed724930cc61b1f61fb404d47c862f9a23f9e572
+    ports: [127.0.0.1:13400:3000]
+    environment:
+      <<: *env
+      GF_DATABASE_HOST: pg:5432
+      GF_DATABASE_PASSWORD: disposable-pg-only
+    depends_on:
+      pg: {condition: service_healthy}
+  grafana-a:
+    <<: *runtime
+    ports: [127.0.0.1:13401:3000]
+  grafana-b:
+    <<: *runtime
+    ports: [127.0.0.1:13402:3000]
+volumes:
+  pg-data:
+  crdb-data:

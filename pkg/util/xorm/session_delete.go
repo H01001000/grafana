@@ -65,15 +65,17 @@ func (session *Session) Delete(bean any) (int64, error) {
 	}
 
 	if len(orderSQL) > 0 {
-		switch session.engine.dialect.DBType() {
-		case core.POSTGRES:
+		switch {
+		case session.engine.cockroachDB:
+			deleteSQL += orderSQL
+		case session.engine.dialect.DBType() == core.POSTGRES:
 			inSQL := fmt.Sprintf("ctid IN (SELECT ctid FROM %s%s)", tableName, orderSQL)
 			if len(condSQL) > 0 {
 				deleteSQL += " AND " + inSQL
 			} else {
 				deleteSQL += " WHERE " + inSQL
 			}
-		case core.SQLITE:
+		case session.engine.dialect.DBType() == core.SQLITE:
 			inSQL := fmt.Sprintf("rowid IN (SELECT rowid FROM %s%s)", tableName, orderSQL)
 			if len(condSQL) > 0 {
 				deleteSQL += " AND " + inSQL
@@ -97,15 +99,17 @@ func (session *Session) Delete(bean any) (int64, error) {
 			condSQL)
 
 		if len(orderSQL) > 0 {
-			switch session.engine.dialect.DBType() {
-			case core.POSTGRES:
+			switch {
+			case session.engine.cockroachDB:
+				realSQL += orderSQL
+			case session.engine.dialect.DBType() == core.POSTGRES:
 				inSQL := fmt.Sprintf("ctid IN (SELECT ctid FROM %s%s)", tableName, orderSQL)
 				if len(condSQL) > 0 {
 					realSQL += " AND " + inSQL
 				} else {
 					realSQL += " WHERE " + inSQL
 				}
-			case core.SQLITE:
+			case session.engine.dialect.DBType() == core.SQLITE:
 				inSQL := fmt.Sprintf("rowid IN (SELECT rowid FROM %s%s)", tableName, orderSQL)
 				if len(condSQL) > 0 {
 					realSQL += " AND " + inSQL

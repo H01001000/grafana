@@ -227,6 +227,9 @@ func (mg *Migrator) Start(isDatabaseLockingEnabled bool, lockAttemptTimeout int)
 }
 
 func (mg *Migrator) RunMigrations(ctx context.Context, isDatabaseLockingEnabled bool, lockAttemptTimeout int) (err error) {
+	if mg.Cfg != nil && mg.Cfg.Raw != nil && mg.Cfg.Raw.Section("database").Key("cockroachdb_manual_bootstrap").MustBool(false) {
+		return mg.verifyCockroachBootstrap(ctx)
+	}
 	if !isDatabaseLockingEnabled {
 		return mg.run(ctx)
 	}

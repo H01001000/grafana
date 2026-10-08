@@ -39,6 +39,7 @@ type DatabaseConfig struct {
 	WALEnabled                  bool
 	UrlQueryParams              map[string][]string
 	SkipMigrations              bool
+	CockroachDBManualBootstrap  bool
 	EnsureDefaultOrgAndUser     bool
 	MigrationLock               bool
 	MigrationLockAttemptTimeout int
@@ -119,6 +120,10 @@ func (dbCfg *DatabaseConfig) readConfig(cfg *setting.Cfg) error {
 	dbCfg.CacheMode = sec.Key("cache_mode").MustString("private")
 	dbCfg.WALEnabled = sec.Key("wal").MustBool(false)
 	dbCfg.SkipMigrations = sec.Key("skip_migrations").MustBool()
+	dbCfg.CockroachDBManualBootstrap = sec.Key("cockroachdb_manual_bootstrap").MustBool(false)
+	if dbCfg.CockroachDBManualBootstrap && (dbCfg.Type != migrator.Postgres || dbCfg.SkipMigrations) {
+		return errors.New("cockroachdb_manual_bootstrap requires type=postgres and skip_migrations=false so the schema can be verified")
+	}
 	dbCfg.EnsureDefaultOrgAndUser = sec.Key("ensure_default_org_and_user").MustBool(true)
 	dbCfg.MigrationLock = sec.Key("migration_locking").MustBool(true)
 	dbCfg.MigrationLockAttemptTimeout = sec.Key("locking_attempt_timeout_sec").MustInt()

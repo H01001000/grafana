@@ -18,6 +18,9 @@ func getEngine(config *sqlstore.DatabaseConfig) (*xorm.Engine, error) {
 		}
 
 		engine.SetMaxOpenConns(config.MaxOpenConn)
+		if config.CockroachDBManualBootstrap {
+			engine.EnableCockroachDB()
+		}
 		engine.SetMaxIdleConns(config.MaxIdleConn)
 		engine.SetConnMaxLifetime(time.Duration(config.ConnMaxLifetime) * time.Second)
 

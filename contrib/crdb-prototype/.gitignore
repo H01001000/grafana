@@ -1,0 +1,8 @@
+logs/
+__pycache__/
+*-pg.sql
+*-crdb.sql
+translation.json
+session.cookies
+unified-path.txt
+bootstrap-schema-optimized.sql

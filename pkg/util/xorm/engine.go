@@ -45,6 +45,12 @@ type Engine struct {
 	defaultContext    context.Context
 	sequenceGenerator SequenceGenerator // If not nil, this generator is used to generate auto-increment values for inserts.
 	randomIDGen       func() int64
+	cockroachDB       bool
+}
+
+// EnableCockroachDB selects native limited writes while retaining the PostgreSQL wire driver.
+func (engine *Engine) EnableCockroachDB() {
+	engine.cockroachDB = true
 }
 
 // CondDeleted returns the conditions whether a record is soft deleted.

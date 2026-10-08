@@ -143,6 +143,9 @@ func (p *resourceDBProvider) initDB(ctx context.Context) (db.DB, error) {
 
 	d := NewDB(p.engine.DB().DB, p.engine.Dialect().DriverName())
 	d = otel.NewInstrumentedDB(d, p.tracer)
+	if p.cfg.Raw.Section("database").Key("cockroachdb_manual_bootstrap").MustBool(false) {
+		d = withCockroachRetries(d, p.cfg.Raw.Section("database").Key("transaction_retries").MustInt(10))
+	}
 
 	return d, nil
 }

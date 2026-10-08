@@ -221,7 +221,7 @@ func (session *Session) Update(bean any, condiBean ...any) (int64, error) {
 	var top string
 	if st.LimitN != nil {
 		limitValue := *st.LimitN
-		if st.Engine.dialect.DBType() == core.MYSQL {
+		if st.Engine.dialect.DBType() == core.MYSQL || session.engine.cockroachDB {
 			condSQL = condSQL + fmt.Sprintf(" LIMIT %d", limitValue)
 		} else if st.Engine.dialect.DBType() == core.SQLITE {
 			tempCondSQL := condSQL + fmt.Sprintf(" LIMIT %d", limitValue)
